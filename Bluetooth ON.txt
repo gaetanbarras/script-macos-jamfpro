@@ -1,0 +1,10 @@
+﻿# Let bluetooth be on 
+sudo defaults write /Library/Preferences/com.apple.Bluetooth ControllerPowerState -int 1
+
+# let bluetooth be off 
+#$ sudo defaults write /Library/Preferences/com.apple.Bluetooth ControllerPowerState -int 0
+
+
+# Then reload the daemon
+sudo killall -HUP bluetoothd # or blued based on macOS version
+# On a macOS system which has proctools installed, you can replace `killall` to `pkill`

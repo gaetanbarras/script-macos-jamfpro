@@ -1,0 +1,2 @@
+﻿sudo jamf trustJSS
+sudo jamf manage

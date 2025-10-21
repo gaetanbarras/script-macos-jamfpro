@@ -1,0 +1,70 @@
+﻿#!/bin/bash
+
+# Chemin du LaunchAgent
+plistFile="$HOME/Library/LaunchAgents/com.company.osupdateprompt.plist"
+
+# Fonction pour vérifier la version de macOS
+isUpToDate() {
+    majorVersion=$(sw_vers -productVersion | cut -d '.' -f1)
+    if [[ "$majorVersion" -ge 14 ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Si macOS est à jour, décharger et supprimer le LaunchAgent
+if isUpToDate; then
+    if [ -f "$plistFile" ]; then
+        launchctl unload "$plistFile" 2>/dev/null
+        rm "$plistFile"
+    fi
+    exit 0
+fi
+
+# Titre et message du popup
+title="Update Required"
+message="Your version of macOS is out of date. As part of security best practices, please update your computer as soon as possible."
+
+# Affichage de la boîte de dialogue avec AppleScript
+userChoice=$(osascript <<EOD
+display dialog "$message" with title "$title" buttons {"Update Now", "Postpone"} default button "Update Now" with icon caution
+EOD
+)
+
+# Traitement de la réponse utilisateur
+if [[ "$userChoice" == "button returned:Update Now" ]]; then
+    # Ouvre les Réglages système sur la page de mise à jour
+    open "x-apple.systempreferences:com.apple.Software-Update-Settings.extension"
+else
+    # Création d’un LaunchAgent qui relance la politique dans 24h
+    mkdir -p "$HOME/Library/LaunchAgents"
+
+    cat <<EOF > "$plistFile"
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.company.osupdateprompt</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/jamf</string>
+        <string>policy</string>
+        <string>-event</string>
+        <string>OSUpdatePrompt</string>
+    </array>
+    <key>StartInterval</key>
+    <integer>86400</integer> <!-- 24 hours -->
+    <key>RunAtLoad</key>
+    <true/>
+</dict>
+</plist>
+EOF
+
+    chmod 644 "$plistFile"
+    launchctl unload "$plistFile" 2>/dev/null
+    launchctl load "$plistFile"
+fi
+
+exit 0

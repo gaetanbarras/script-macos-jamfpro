@@ -1,0 +1,9 @@
+﻿#!/bin/sh
+if [ -d "/Applications/Install macOS Big Sur.app" ]; then
+	#folder existe erase and install
+	'/Applications/Install macOS Monterey.app/Contents/Resources/startosinstall' --eraseinstall --agreetolicense --forcequitapps --newvolumename 'Macintosh HD'
+	
+else
+	sudo /usr/sbin/softwareupdate --fetch-full-installer
+	'/Applications/Install macOS Big Sur.app/Contents/Resources/startosinstall' --eraseinstall --agreetolicense --forcequitapps --newvolumename 'Macintosh HD'
+fi

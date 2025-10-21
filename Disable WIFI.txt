@@ -1,0 +1,5 @@
+﻿WFINT=$(networksetup -listallhardwareports | awk ' /Airport|Wi-Fi/ {getline; print $NF }')
+if [ "$WFINT" != "" ]; then
+echo "Disabling Wi-Fi on $WFINT"
+networksetup -setairportpower $WFINT off
+fi

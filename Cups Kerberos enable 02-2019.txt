@@ -1,0 +1,15 @@
+﻿#!/bin/bash
+
+  
+
+cupsAuth=`cupsctl | grep DefaultAuthType | awk -F= '{print $2}'`
+
+ 
+
+if [ $cupsAuth = "Basic" ]
+
+then
+
+        cupsctl DefaultAuthType=Negotiate
+
+fi

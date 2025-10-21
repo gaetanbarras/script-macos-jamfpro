@@ -1,0 +1,2 @@
+﻿cd ~/Desktop
+ln -s ~/System/Applications/TextEdit.app

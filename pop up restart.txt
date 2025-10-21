@@ -1,0 +1,31 @@
+﻿#!/bin/bash
+
+/usr/bin/curl -s -o /tmp/elcapitan_icon.png http://assets.materialup.com/uploads/ec819071-7140-4c6d-89ac-81b712642fcb/512x512bb-85.png
+loggedInUser=$(stat -f%Su /dev/console)
+jamfHelper="/Library/Application Support/JAMF/bin/jamfHelper.app/Contents/MacOS/jamfHelper"
+windowType="hud"
+description="Your computer has not been restarted for more than 14 days. To perform the restart, select 'RESTART' below and the security update will begin to run. If you are unable to perform this update at the moment, please select 'Cancel.'
+
+*Please save all working documents before selecting 'RESTART.'
+
+If you require assistance, please contact the Helpdesk by email at itsupport@regentschool.ch."
+
+button1="RESTART"
+button2="Cancel"
+icon="/tmp/elcapitan_icon.png"
+title="Computer Not Restart More than 14 DAYS"
+alignDescription="left" 
+alignHeading="center"
+defaultButton="2"
+cancelButton="2"
+timeout="300"
+
+userChoice=$("$jamfHelper" -windowType "$windowType" -lockHUD -title "$title" -timeout "$timeout" -defaultButton "$defaultButton" -cancelButton "$cancelButton" -icon "$icon" -description "$description" -alignDescription "$alignDescription" -alignHeading "$alignHeading" -button1 "$button1" -button2 "$button2")
+
+if [ "$userChoice" == "0" ]; then
+    echo "User clicked UPDATE; now running OS X El Capitan Installer via JSS policy ID 547."
+    shutdown -r now
+elif [ "$userChoice" == "2" ]; then
+    echo "User clicked Cancel or timeout was reached; now exiting."
+    exit 0    
+fi

@@ -1,0 +1,15 @@
+﻿#!/bin/bash
+
+# Sauvegarder le fichier de configuration actuel du Dock (optionnel)
+cp ~/Library/Preferences/com.apple.dock.plist ~/Library/Preferences/com.apple.dock.backup.plist
+
+# Supprimer toutes les applications du Dock
+defaults write com.apple.dock persistent-apps -array
+
+# Supprimer tous les documents du Dock
+defaults write com.apple.dock persistent-others -array
+
+# Redémarrer le Dock pour appliquer les changements
+killall Dock
+
+echo "Tous les éléments ont été retirés du Dock."

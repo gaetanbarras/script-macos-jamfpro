@@ -1,0 +1,5 @@
+﻿res=$(osascript -e 'tell application (path to frontmost application as text) to display dialog "Thank You to reeboot your computer for finish installation \n\nIT Support Le Regent College" buttons {"Reeboot_Now", "Reeboot By MySelf"} with icon stop' 2>/dev/null)
+if [[ $res == *Reeboot_Now* ]]; then 
+  osascript -e 'tell application (path to frontmost application as text) to display dialog "Your Computer reeboot in 5 minutes" buttons {"OK"} with icon stop'
+  shutdown -r +5
+fi

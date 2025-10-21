@@ -1,0 +1,23 @@
+﻿#!/bin/bash
+
+# Créer un nouvel utilisateur avec un mot de passe vide
+sysadminctl -addUser exa -password "" -home /Users/exa -admin
+
+# Modifier le compte pour le définir comme standard (non-admin)
+dscl . -create /Users/exa IsAdmin -bool false
+
+
+# Définir le nom de l'utilisateur
+username="exa"
+
+# Afficher le message initial
+/bin/echo "User $username is currently an admin. Converting into Standard User"
+
+# Retirer les droits administratifs de l'utilisateur
+/usr/sbin/dseditgroup -o edit -d $username -t user admin
+
+# Ajouter l'utilisateur au groupe _lpadmin
+/bin/echo "Adding $username into _lpadmin group"
+/usr/sbin/dseditgroup -o edit -a $username -t user _lpadmin
+
+/bin/echo "Modifications completed."

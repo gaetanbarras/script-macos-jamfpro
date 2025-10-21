@@ -1,0 +1,2 @@
+﻿defaults write NSGlobalDomain NSAutomaticSpellingCorrectionEnabled -bool false
+defaults write NSGlobalDomain NSAutomaticTextCompletionEnabled -bool false

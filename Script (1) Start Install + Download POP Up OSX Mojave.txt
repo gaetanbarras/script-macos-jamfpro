@@ -1,0 +1,28 @@
+﻿#!/bin/sh
+JAMFHELPER="/Library/Application Support/JAMF/bin/jamfHelper.app/Contents/MacOS/jamfHelper"
+
+StartDownload()
+{
+### can't install if it isn't cached. ### 
+if [ ! -d "/Applications/Install macOS Mojave.app" ]; then
+    /Library/Application\ Support/JAMF/bin/jamfHelper.app/Contents/MacOS/jamfHelper -windowType utility -title "Mojave Not Cached" -description "mac OS Mojave is not cached and is not yet ready to be installed, Mojave will be downloaded and install start in 10 min" -button1 "Ok" -icon "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/Bonjour.icns" -defaultButton 1 &
+   	echo "not cached"
+    /usr/local/bin/jamf policy -event MojavePackage
+fi
+}
+# Get the user's selection
+RESULT=`"$JAMFHELPER" -windowType utility -title "Installing macOS Mojave" -description "Do You Want install mac OS Mojave Now.
+
+Installation take around 1 hours.
+Please save all work NOW as all unsaved work will be LOST." -button1 "Yes" -button2 "Later" -icon "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/Sync.icns"` 
+if [ $RESULT == 0 ]; then
+    # do button1 stuff
+    echo "OK was pressed!"
+    StartDownload
+    /usr/local/bin/jamf policy -event MojaveScriptInstaller
+    exit 0
+elif [ $RESULT == 2 ]; then
+    # do button2 stuff
+    echo "Cancel was pressed!"
+    error
+fi

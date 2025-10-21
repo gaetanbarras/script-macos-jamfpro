@@ -1,0 +1,164 @@
+#!/bin/bash
+
+# Notification function (non-blocking)
+notify() {
+    osascript -e "display notification \"$1\" with title \"Jamf Cleanup\""
+}
+
+# Blocking restart confirmation
+confirm_restart() {
+    osascript <<EOD
+        display dialog "The process is finished. Would you like to restart now?" buttons {"Restart"} default button 1 with title "Jamf Cleanup" with icon caution
+EOD
+}
+
+# Blocking error message
+show_error_and_exit() {
+    osascript <<EOD
+        display dialog "❌ MDM profile is still present on this Mac. Please check the Jamf server or try again later." buttons {"OK"} default button 1 with title "Jamf Cleanup" with icon stop
+EOD
+    exit 1
+}
+
+# Jamf API auth info
+JamfProURL="https://XXX.jamfcloud.com"
+client_id="INSERT CLIENT ID"
+client_secret="INSERT CLIENT SECRET"
+
+# Get API token
+getAccessToken() {
+    response=$(curl --silent --location --request POST "${JamfProURL}/api/oauth/token" \
+        --header "Content-Type: application/x-www-form-urlencoded" \
+        --data-urlencode "client_id=${client_id}" \
+        --data-urlencode "grant_type=client_credentials" \
+        --data-urlencode "client_secret=${client_secret}")
+    bearer_token=$(echo "$response" | plutil -extract access_token raw -)
+    token_expires_in=$(echo "$response" | plutil -extract expires_in raw -)
+    current_epoch=$(date +%s)
+    token_expiration_epoch=$(($current_epoch + $token_expires_in - 1))
+}
+
+checkTokenExpiration() {
+    current_epoch=$(date +%s)
+    if [[ $token_expiration_epoch -ge $current_epoch ]]; then
+        echo "Token still valid."
+    else
+        getAccessToken
+    fi
+}
+
+##########################
+# 1. Uninstall Deledao
+##########################
+
+notify "Launching Deledao uninstaller..."
+open "/Applications/Uninstall DeledaoProxy.app/"
+
+notify "Waiting 15 seconds for Deledao uninstall..."
+sleep 15
+
+if [ -d "/Applications/Uninstall DeledaoProxy.app" ] || [ -d "/Applications/DeledaoProxy.app" ]; then
+    notify "Deledao still detected. Retrying in 15 seconds..."
+    sleep 15
+
+    if [ -d "/Applications/Uninstall DeledaoProxy.app" ] || [ -d "/Applications/DeledaoProxy.app" ]; then
+        notify "❌ Deledao is still present. Exiting script."
+        exit 1
+    else
+        notify "✅ Deledao successfully removed."
+    fi
+else
+    notify "✅ Deledao successfully removed."
+fi
+
+##########################
+# 2. Remove Chrome token
+##########################
+
+if [ -f "/Library/Google/Chrome/CloudManagementEnrollmentToken" ]; then
+    notify "Chrome enrollment token found. Deleting..."
+    rm "/Library/Google/Chrome/CloudManagementEnrollmentToken"
+    sleep 1
+    if [ ! -f "/Library/Google/Chrome/CloudManagementEnrollmentToken" ]; then
+        notify "✅ Chrome token deleted successfully."
+        
+        # � Forcer un ping en redémarrant Chrome
+        notify "Restarting Chrome to force policy refresh..."
+        killall "Google Chrome" 2>/dev/null
+        sleep 2
+        open -a "Google Chrome"
+    else
+        notify "❌ Failed to delete Chrome token. Exiting script."
+        exit 1
+    fi
+else
+    notify "No Chrome enrollment token found."
+    
+    # ⚠️ Même sans token, relancer Chrome peut aider à synchroniser l’état
+    notify "Restarting Chrome just in case..."
+    killall "Google Chrome" 2>/dev/null
+    sleep 2
+    open -a "Google Chrome"
+fi
+##########################
+# 3. Unmanage via serial & API
+##########################
+
+notify "Authenticating to Jamf Pro..."
+getAccessToken
+
+notify "Retrieving Mac serial number..."
+serialNumber=$(system_profiler SPHardwareDataType | awk '/Serial/ {print $4}')
+notify "Serial number: $serialNumber"
+
+notify "Querying Jamf for device ID..."
+deviceID=$(curl -s -H "Accept: text/xml" -H "Authorization: Bearer ${bearer_token}" "${JamfProURL}/JSSResource/computers/serialnumber/${serialNumber}" | xmllint --xpath '/computer/general/id/text()' -)
+
+if [ -z "$deviceID" ]; then
+    notify "❌ Could not retrieve Jamf ID. Exiting script."
+    exit 1
+else
+    notify "Device ID: $deviceID"
+fi
+
+notify "Sending UnmanageDevice command to Jamf..."
+curl -s -X POST --header "Authorization: Bearer ${bearer_token}" \
+    "${JamfProURL}/JSSResource/computercommands/command/UnmanageDevice/id/${deviceID}"
+
+##########################
+# 4. Wait and check MDM profile
+##########################
+
+notify "Waiting 15 seconds for MDM profile to be removed..."
+sleep 15
+
+if profiles -C -v | grep -q "com.jamfsoftware"; then
+    notify "MDM profile still detected. Waiting another 15 seconds..."
+    sleep 15
+    if profiles -C -v | grep -q "com.jamfsoftware"; then
+        show_error_and_exit
+    else
+        notify "✅ MDM profile successfully removed."
+    fi
+else
+    notify "✅ MDM profile successfully removed."
+fi
+
+##########################
+# 5. Final cleanup
+##########################
+
+notify "Resetting ignored software updates..."
+softwareupdate --reset-ignored
+
+notify "Closing Self Service..."
+killall "Self Service" 2>/dev/null
+
+notify "Removing Jamf Framework..."
+/usr/local/jamf/bin/jamf removeFramework
+
+confirm_restart
+notify "Rebooting..."
+shutdown -r now
+
+exit 0

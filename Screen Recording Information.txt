@@ -1,0 +1,48 @@
+﻿#!/bin/bash
+
+TCC_DB="/Library/Application Support/com.apple.TCC/TCC.db"
+AUTHORIZED_APPS=()
+RESULT=""
+
+if [ -f "$TCC_DB" ]; then
+    RAW_RESULTS=$(sqlite3 "$TCC_DB" \
+    "SELECT client, auth_value FROM access WHERE service='kTCCServiceScreenCapture';")
+
+    if [ -n "$RAW_RESULTS" ]; then
+        RESULT+="� Liste des apps autorisées pour Screen Recording :\n\n"
+        while IFS='|' read -r client auth_value; do
+            case "$auth_value" in
+                0) status="Refusé" ;;
+                2) status="Autorisé" ;;
+                3) status="Restreint" ;;
+                *) status="Inconnu ($auth_value)" ;;
+            esac
+
+            RESULT+="• $client : $status\n"
+            if [ "$auth_value" -eq 2 ]; then
+                AUTHORIZED_APPS+=("$client")
+            fi
+        done <<< "$RAW_RESULTS"
+
+        RESULT+="\n� Processus actifs :\n"
+        for app in "${AUTHORIZED_APPS[@]}"; do
+            if [[ "$app" == /* ]]; then
+                process_name=$(basename "$app")
+            else
+                process_name=$(echo "$app" | awk -F '.' '{print $NF}')
+            fi
+
+            RUNNING=$(pgrep -i "$process_name")
+            if [ -n "$RUNNING" ]; then
+                RESULT+="✅ $process_name (actif)\n"
+            fi
+        done
+    else
+        RESULT="Aucune entrée trouvée dans TCC.db pour Screen Recording."
+    fi
+else
+    RESULT="⚠️ Base de données TCC.db introuvable."
+fi
+
+# Affiche le résultat dans un popup AppleScript
+osascript -e "display dialog \"$RESULT\" with title \"Screen Recording Check\" buttons {\"OK\"} default button \"OK\""

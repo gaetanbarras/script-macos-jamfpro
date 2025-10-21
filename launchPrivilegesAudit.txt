@@ -1,0 +1,88 @@
+﻿#!/bin/bash
+
+echo "�️ Déploiement du script d’audit et du LaunchDaemon..."
+
+auditScript="/usr/local/bin/privileges_audit.sh"
+daemonPlist="/Library/LaunchDaemons/com.example.privileges.audit.plist"
+
+# --- Création du script d’audit ---
+cat << 'EOF' > "$auditScript"
+#!/bin/bash
+
+# Arguments
+username="$1"
+new_status="$2"
+reason="$3"
+
+# Variables
+timestamp=$(date "+%Y%m%d-%H%M%S")
+logdir="/Library/Logs/PrivilegesAudit"
+logfile="${logdir}/audit_${timestamp}_${username}.log"
+
+# Préparation du dossier de logs
+mkdir -p "$logdir"
+chmod 755 "$logdir"
+touch "$logfile"
+chmod 644 "$logfile"
+
+# Informations de début
+{
+  echo "==============================="
+  echo "�️ AUDIT DE SESSION PRIVILÉGIÉE"
+  echo "Date        : $(date)"
+  echo "Utilisateur : ${username:-Inconnu}"
+  echo "Status      : ${new_status:-Non spécifié}"
+  echo "Raison      : ${reason:-Non fournie}"
+  echo "Durée       : 10 minutes"
+  echo "==============================="
+  echo ""
+  echo "� Processus et accès fichiers en cours :"
+} >> "$logfile"
+
+# Lancer la surveillance fs_usage
+/usr/bin/fs_usage -w -f filesystem -e -t 1 >> "$logfile" 2>&1 &
+pid=$!
+
+# Attente
+sleep 600
+
+# Fin de l'audit
+kill "$pid"
+echo "✅ Fin de l'audit à $(date)" >> "$logfile"
+
+exit 0
+EOF
+
+# Permissions
+chmod +x "$auditScript"
+chown root:wheel "$auditScript"
+
+# --- Création du LaunchDaemon ---
+cat << EOF > "$daemonPlist"
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.example.privileges.audit</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>$auditScript</string>
+        <string>\$1</string>
+        <string>\$2</string>
+        <string>\$3</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <false/>
+</dict>
+</plist>
+EOF
+
+# Permissions
+chmod 644 "$daemonPlist"
+chown root:wheel "$daemonPlist"
+
+echo "✅ Script d’audit et LaunchDaemon prêts"
+exit 0

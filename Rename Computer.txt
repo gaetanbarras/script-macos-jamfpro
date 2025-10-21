@@ -1,0 +1,16 @@
+﻿
+loggedInUser=$( echo "show State:/Users/ConsoleUser" | /usr/sbin/scutil | /usr/bin/awk '/Name :/ && ! /loginwindow/ { print $3 }' )
+
+localName=${loggedInUser//[-._]/}
+echo $localName
+echo $loggedInUser
+
+
+scutil --set HostName $loggedInUser
+scutil --set LocalHostName $localName
+scutil --set ComputerName $loggedInUser
+dscacheutil -flushcache
+
+echo Rename Successful, new name : $loggedInUser
+
+exit

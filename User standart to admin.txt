@@ -1,0 +1,17 @@
+﻿#!/bin/sh
+
+## Promote standard users to admin
+## https://www.jamf.com/jamf-nation/discussions/6549/policy-to-change-account-type
+## Get list of users for promotion
+/bin/echo "Building list of local standard user accounts for promotion"
+userList=$( /usr/bin/dscl . -list /Users UniqueID | /usr/bin/awk '$2 >= 501 { print $1; }' | /usr/bin/grep -v "admin" )
+
+## Promote each standard user to admin
+for i in $userList; do
+    if [[ `/usr/sbin/dseditgroup -o checkmember -m $i admin | /usr/bin/awk '{ print $1 }'` != "yes" ]]; then
+        /bin/echo "User $i is currently a Standard User. Promoting to Admin."
+        /usr/sbin/dseditgroup -o edit -a $i -t user admin
+    else
+        echo "User $i is already an admin. Leaving as is."
+    fi
+done

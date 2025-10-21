@@ -1,0 +1,61 @@
+﻿#!/bin/bash
+
+# Récupère l'utilisateur actuellement connecté (hors root et loginwindow)
+CURRENT_USER=$(stat -f "%Su" /dev/console)
+USER_HOME="/Users/$CURRENT_USER"
+
+echo "=== DÉBUT DU NETTOYAGE POUR L'UTILISATEUR : $CURRENT_USER ==="
+
+# Vérifie la validité de l'utilisateur
+if [[ "$CURRENT_USER" != "root" && -d "$USER_HOME" ]]; then
+
+  echo "Nettoyage des dossiers utilisateur..."
+
+  # Dossiers à nettoyer
+  FOLDERS_TO_CLEAN=("Documents" "Desktop" "Downloads" "Music" "Pictures" "Movies" "Public")
+
+  for folder in "${FOLDERS_TO_CLEAN[@]}"; do
+    TARGET="$USER_HOME/$folder"
+    if [ -d "$TARGET" ]; then
+      echo "→ Suppression du contenu de : $TARGET"
+      rm -rf "$TARGET"/*
+    else
+      echo "→ Dossier $TARGET introuvable. Ignoré."
+    fi
+  done
+
+  echo "Nettoyage des réglages et préférences dans ~/Library..."
+
+  rm -rf "$USER_HOME/Library/Preferences"/*
+  rm -rf "$USER_HOME/Library/Caches"/*
+  rm -rf "$USER_HOME/Library/Containers"/*
+  rm -rf "$USER_HOME/Library/Application Support"/*
+  rm -rf "$USER_HOME/Library/Saved Application State"/*
+  rm -rf "$USER_HOME/Library/Logs"/*
+  rm -rf "$USER_HOME/Library/HTTPStorages"/*
+  rm -rf "$USER_HOME/Library/WebKit"/*
+
+  echo "Réinitialisation Dock et Finder..."
+  rm -f "$USER_HOME/Library/Preferences/com.apple.dock.plist"
+  rm -f "$USER_HOME/Library/Preferences/com.apple.finder.plist"
+
+  echo "Réparation des permissions..."
+  chown -R "$CURRENT_USER":staff "$USER_HOME"
+  chmod -R u+rwX "$USER_HOME"
+
+  echo "Fermeture de Self Service si ouvert..."
+  su -l "$CURRENT_USER" -c 'osascript -e "try" -e "tell application \"Self Service\" to quit" -e "end try"'
+
+  echo "✅ Nettoyage terminé pour $CURRENT_USER. Redémarrage en cours..."
+
+  # Pause de 5 secondes pour laisser le temps à Self Service de se fermer
+  sleep 5
+
+  /sbin/shutdown -r now
+
+else
+  echo "❌ Aucun utilisateur valide détecté. Nettoyage annulé."
+  exit 1
+fi
+
+exit 0

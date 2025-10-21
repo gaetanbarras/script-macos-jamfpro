@@ -1,0 +1,2 @@
+﻿lpadmin -p LRC-PRINTER-COLOR -o printer-is-shared=false
+lpadmin -p LRC-PRINTER-BW -o printer-is-shared=false

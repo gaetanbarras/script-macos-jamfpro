@@ -1,0 +1,1 @@
+﻿chflags hidden /Applications/Uninstall\ DeledaoProxy.app

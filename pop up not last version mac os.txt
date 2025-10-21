@@ -1,0 +1,49 @@
+﻿#!/bin/bash
+
+# Title of the window
+title="Update Required"
+
+# Message
+message="Your version of macOS is out of date. As part of security best practices, you are required to update your computer as soon as possible."
+
+# Display an AppleScript dialog box with two buttons
+userChoice=$(osascript <<EOD
+display dialog "$message" with title "$title" buttons {"Update Now", "Postpone"} default button "Update Now" with icon caution
+EOD
+)
+
+# Process the user's response
+if [[ "$userChoice" == "button returned:Update Now" ]]; then
+    # Open the Software Update section in System Settings (macOS 13+)
+    open "x-apple.systempreferences:com.apple.Software-Update-Settings.extension"
+else
+    # Add a reminder for the next day (by creating a LaunchAgent)
+    plistFile="$HOME/Library/LaunchAgents/com.company.osupdateprompt.plist"
+
+    cat <<EOF > "$plistFile"
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.company.osupdateprompt</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/jamf</string>
+        <string>policy</string>
+        <string>-event</string>
+        <string>OSUpdatePrompt</string>
+    </array>
+    <key>StartInterval</key>
+    <integer>86400</integer> <!-- 1 day -->
+    <key>RunAtLoad</key>
+    <true/>
+</dict>
+</plist>
+EOF
+
+    # Load the LaunchAgent
+    launchctl load "$plistFile"
+fi
+
+exit 0

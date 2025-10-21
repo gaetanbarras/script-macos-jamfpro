@@ -1,0 +1,77 @@
+﻿#!/bin/sh
+
+StartInstall ()
+{
+
+### install high sierra ### 
+JAMFHELPER="/Library/Application Support/JAMF/bin/jamfHelper.app/Contents/MacOS/jamfHelper"
+
+# Get the user's selection
+RESULT=`"$JAMFHELPER" -windowType utility -title "Installing macOS Mojave" -description "mac OS Mojave will begin installing momentarily.
+
+Please save all work NOW as all unsaved work will be LOST." -button1 "OK" -icon "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/Sync.icns"` 
+
+if [ $RESULT == 0 ]; then
+    # do button1 stuff
+    echo "OK was pressed!"
+    /Applications/Install\ macOS\ Mojave.app/Contents/Resources/startosinstall --applicationpath "/Applications/Install macOS Mojave.app" --agreetolicense
+        killall "Self Service"
+        exit 0
+elif [ $RESULT == 2 ]; then
+    # do button2 stuff
+    echo "Cancel was pressed!"
+    error
+fi
+}
+
+OS=$(sw_vers -productVersion | cut -c 1-5)
+
+### don't install if already installed ### 
+if [ "$OS" = "10.14" ]; then
+    /Library/Application\ Support/JAMF/bin/jamfHelper.app/Contents/MacOS/jamfHelper -windowType utility -title "Mojave Installed" -description "mac OS Mojave is already installed" -button1 "Ok" -icon "/Applications/Utilities/System Information.app/Contents/Resources/SystemLogo.tiff" -defaultButton 1 &
+    echo "10.14 already installed"
+    ps ax |  grep "/Applications/SAES Self Service.app" | awk '{print $1}' | xargs kill -9 2> /dev/null
+    exit 0
+fi
+
+
+StorageAvail=$(df -H / | tail -1 | awk '{print $4}' | tr -d "G")
+
+### don't install if you have less than 10gb of space ### 
+if [ $StorageAvail -lt 10 ]; then
+    jamf displayMessage -message "Your computer does not have enough space. You have only $(df -H / | tail -1 | awk '{print $4}') GB of space free. MacOS Mojave requires at least 10 GB of free space available. If you need help making room, please visit the Technology Office."
+    echo "Not enough storage space"
+    error
+    exit 0
+fi
+
+### can't install if it isn't cached. ### 
+if [ ! -d "/Applications/Install macOS Mojave.app" ]; then
+    /usr/local/bin/jamf policy -event MojavePackage &
+    /Library/Application\ Support/JAMF/bin/jamfHelper.app/Contents/MacOS/jamfHelper -windowType utility -title "Mojave Not Cached" -description "mac OS Mojave is not cached and is not yet ready to be installed, please check back soon." -button1 "Ok" -icon "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/Bonjour.icns" -defaultButton 1 &
+    echo "not cached"
+    error
+    exit 0
+fi
+
+PluggedInYN=$(pmset -g ps | grep "Power" | cut -c 18- | tr -d "'")
+
+### are we plugged in? ### 
+if [ "$PluggedInYN" = "AC Power" ]; then
+    echo "plugged in"
+    StartInstall
+
+else
+### do we have enough power? ### 
+    BatteryPercentage=$(pmset -g ps | tail -1 | awk -F ";" '{print $1}' | awk -F "\t" '{print $2}' | tr -d "%")
+    if [ $BatteryPercentage -ge 50 ]; then
+    echo "laptop over 50% power"    
+    StartInstall
+
+    else
+        jamf displayMessage -message "Please plug your laptop in while installing. You do not have enough power to install macOS Sierra. You have $BatteryPercentage% power left" 
+        echo "not enough juice"
+        error
+        exit 0
+    fi
+fi

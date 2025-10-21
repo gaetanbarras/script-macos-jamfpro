@@ -1,0 +1,32 @@
+﻿#!/bin/bash
+
+# Liste des comptes à exclure de la rétrogradation
+excludedUsers=("admin" "_jamfmgmt")
+
+echo "⏳ Construction de la liste des comptes locaux à analyser..."
+
+# Liste tous les utilisateurs avec UID >= 501 (utilisateurs classiques)
+userList=$(dscl . -list /Users UniqueID | awk '$2 >= 501 { print $1 }')
+
+for user in $userList; do
+    # Vérifie si l'utilisateur est dans la liste d'exclusion
+    if [[ " ${excludedUsers[@]} " =~ " $user " ]]; then
+        echo "� Utilisateur $user exclu (conservé admin)."
+        continue
+    fi
+
+    # Vérifie s'il est admin
+    isAdmin=$(dseditgroup -o checkmember -m "$user" admin | awk '{ print $1 }')
+
+    if [[ "$isAdmin" == "yes" ]]; then
+        echo "� Rétrogradation de $user : suppression des droits admin..."
+        dseditgroup -o edit -d "$user" -t user admin
+
+        echo "�️ Ajout de $user au groupe _lpadmin pour permettre l'impression"
+        dseditgroup -o edit -a "$user" -t user _lpadmin
+    else
+        echo "✅ $user est déjà standard. Rien à faire."
+    fi
+done
+
+echo "✅ Traitement terminé."

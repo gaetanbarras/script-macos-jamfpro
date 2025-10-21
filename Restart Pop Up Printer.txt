@@ -1,0 +1,1 @@
+﻿osascript -e 'tell application (path to frontmost application as text) to display dialog "Thank You to reeboot your computer for finish printer installation \n\nIT Support Le Regent College" buttons {"OK"} with icon stop'
