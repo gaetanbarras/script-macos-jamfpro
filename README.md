@@ -141,6 +141,4 @@ furnished to do so, subject to the following conditions:
 ## 👨‍💻 Author
 
 **Gaëtan Barras**  
-IT Operations Manager  
-📧 [Your email or GitHub profile link]  
 💼 Scripts designed for use in professional Jamf Pro environments.
