@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="UTF-8"?><extensionAttribute>
+<displayName>DiskList</displayName>
+<description/>
+<dataType>string</dataType>
+<scriptContentsMac>if [[ df | grep -c "NTFS" == 1 ]]&#13;
+&#13;
+then echo "&lt;result&gt; has windows partition&lt;/result&gt;" else echo "no windows partition detected, not adding an attribute..."&#13;
+&#13;
+fi&#13;
+&#13;
+exit 0&#13;
+</scriptContentsMac>
+</extensionAttribute>

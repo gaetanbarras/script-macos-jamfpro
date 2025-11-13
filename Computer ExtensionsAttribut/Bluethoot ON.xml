@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="UTF-8"?><extensionAttribute>
+<displayName>Bluethoot ON</displayName>
+<description/>
+<dataType>string</dataType>
+<scriptContentsMac>#!/bin/bash&#13;
+&#13;
+BlueVal=`/usr/libexec/PlistBuddy -c "Print :ControllerPowerState" /Library/Preferences/com.apple.Bluetooth.plist`&#13;
+&#13;
+&#13;
+&#13;
+echo "&lt;result&gt; $BlueVal&lt;/result&gt;"</scriptContentsMac>
+</extensionAttribute>

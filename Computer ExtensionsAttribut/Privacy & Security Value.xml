@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="UTF-8"?><extensionAttribute>
+<displayName>Privacy &amp; Security Value</displayName>
+<description/>
+<dataType>string</dataType>
+<scriptContentsMac>#!/bin/bash
+
+# Extension Attribute pour Jamf Pro
+# Récupère les permissions TCC (Screen Recording, etc.)
+# Format lisible avec conversion auth_value et noms de services
+
+TCC_DB="/Library/Application Support/com.apple.TCC/TCC.db"
+RESULT=""
+
+if [ -f "$TCC_DB" ]; then
+    # Exécute la requête
+    RAW_RESULTS=$(sudo sqlite3 "$TCC_DB" \
+    "SELECT service, client, auth_value FROM access;")
+    
+    # Vérifie si des résultats existent
+    if [ -n "$RAW_RESULTS" ]; then
+        while IFS='|' read -r service client auth_value; do
+            # Conversion de auth_value en texte lisible
+            case "$auth_value" in
+                0) status="Refusé" ;;
+                2) status="Autorisé" ;;
+                3) status="Restreint" ;;
+                *) status="Inconnu ($auth_value)" ;;
+            esac
+
+            # Conversion du service en libellé plus lisible
+            case "$service" in
+                kTCCServiceScreenCapture)
+                    service_label="Screen Recording"
+                    ;;
+                kTCCServiceAccessibility)
+                    service_label="Accessibilité"
+                    ;;
+                kTCCServiceSystemPolicyAllFiles)
+                    service_label="Accès complet aux fichiers"
+                    ;;
+                kTCCServiceMicrophone)
+                    service_label="Microphone"
+                    ;;
+                kTCCServiceCamera)
+                    service_label="Caméra"
+                    ;;
+                *)
+                    service_label="$service"
+                    ;;
+            esac
+
+            # Ajoute la ligne formatée au résultat final
+            RESULT+="Service : $service_label | App : $client | Statut : $status
+"
+        done &lt;&lt;&lt; "$RAW_RESULTS"
+    else
+        RESULT="Aucune entrée trouvée dans TCC.db."
+    fi
+else
+    RESULT="Base de données TCC.db introuvable."
+fi
+
+# Renvoie le résultat à Jamf (encadré par &lt;result&gt;)
+echo "&lt;result&gt;$RESULT&lt;/result&gt;"</scriptContentsMac>
+</extensionAttribute>

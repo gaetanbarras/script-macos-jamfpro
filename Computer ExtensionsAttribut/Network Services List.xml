@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="UTF-8"?><extensionAttribute>
+<displayName>Network Services List</displayName>
+<description>This attribute lists all network services present on a machine.  This attribute applies to both Mac and Windows.</description>
+<dataType>string</dataType>
+<scriptContentsMac>#!/bin/sh&#13;
+&#13;
+Netlis=$(networksetup -listallnetworkservices)&#13;
+&#13;
+        echo "&lt;result&gt;$Netlis&lt;/result&gt;"&#13;
+&#13;
+exit</scriptContentsMac>
+</extensionAttribute>

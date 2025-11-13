@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="UTF-8"?><extensionAttribute>
+<displayName>VPN</displayName>
+<description/>
+<dataType>string</dataType>
+<scriptContentsMac>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&#13;
+&lt;extensionAttribute&gt;&#13;
+&lt;displayName&gt;Active Network Interface&lt;/displayName&gt;&#13;
+&lt;description/&gt;&#13;
+&lt;dataType&gt;string&lt;/dataType&gt;&#13;
+&lt;scriptContentsMac&gt;#!/bin/bash&amp;#13;&#13;
+ref=$(/usr/bin/sw_vers -productVersion | awk '{print substr($1,4,2)}')&amp;#13;&#13;
+case $ref in&amp;#13;&#13;
+[0-4] ) ntwkset="/System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Support/networksetup -listnetworkserviceorder"&amp;#13;&#13;
+        ;;&amp;#13;&#13;
+     *) ntwkset="networksetup -listnetworkserviceorder"&amp;#13;&#13;
+        ;;&amp;#13;&#13;
+esac&amp;#13;&#13;
+&amp;#13;&#13;
+ifconfigoutput='&amp;#13;&#13;
+BEGIN            { print_it = 0 }&amp;#13;&#13;
+/status: active/ { print_it = 1 }&amp;#13;&#13;
+/^($|[^\t])/     { if(print_it) print buffer; buffer = $0; print_it = 0 }&amp;#13;&#13;
+/^\t/            { buffer = buffer "\n" $0 }&amp;#13;&#13;
+END              { if(print_it) print buffer }&amp;#13;&#13;
+'&amp;#13;&#13;
+&amp;#13;&#13;
+ntwkint=($(ifconfig -u | awk "$ifconfigoutput" | awk '/flags/{print substr($1,1,3)}'))&amp;#13;&#13;
+/bin/echo -n $"&amp;lt;result&amp;gt;"&amp;#13;&#13;
+for x in "${ntwkint[@]}"&amp;#13;&#13;
+do&amp;#13;&#13;
+	echo `$ntwkset | grep "$x" | sed -e 's/[)(]//g;s/,//g;s/.*Port: //g;s/Device:\ //g'`&amp;#13;&#13;
+done&amp;#13;&#13;
+echo "&amp;lt;/result&amp;gt;"&lt;/scriptContentsMac&gt;&#13;
+&lt;scriptContentsWindows&gt;On Error Resume Next&amp;#13;&#13;
+strComputer = "." &amp;#13;&#13;
+Set objWMIService = GetObject("winmgmts:\\" &amp;amp; strComputer &amp;amp; "\root\CIMV2") &amp;#13;&#13;
+Set colItems = objWMIService.ExecQuery("SELECT * FROM Win32_NetworkAdapterConfiguration",,48) &amp;#13;&#13;
+intmetric = 999    &amp;#13;&#13;
+For Each objItem in colItems &amp;#13;&#13;
+    If objitem.ipenabled = True then&amp;#13;&#13;
+    If objItem.IPConnectionMetric &amp;lt; intmetric then&amp;#13;&#13;
+    stractiveconnection = objItem.description&amp;#13;&#13;
+    intmetric = objItem.IPConnectionMetric&amp;#13;&#13;
+    End If&amp;#13;&#13;
+    End If &amp;#13;&#13;
+Next&amp;#13;&#13;
+WScript.Echo "&amp;lt;result&amp;gt;" &amp;amp; stractiveconnection &amp;amp; "&amp;lt;/result&amp;gt;"&lt;/scriptContentsWindows&gt;&#13;
+&lt;/extensionAttribute&gt;</scriptContentsMac>
+</extensionAttribute>

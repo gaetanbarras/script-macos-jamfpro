@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="UTF-8"?><extensionAttribute>
+<displayName>Deledao Service Installed and Run</displayName>
+<description>Script pour tester si un site bloqué est accessible depuis le mac (deledao actif ou non)</description>
+<dataType>string</dataType>
+<scriptContentsMac>#!/bin/bash&#13;
+&#13;
+# Liste des noms de processus associés à Deledao ActiveScan&#13;
+PROCESS_NAMES=("DeledaoProxyService")&#13;
+&#13;
+# Variable pour indiquer si l'un des processus est actif&#13;
+RESULT="No"&#13;
+&#13;
+# Parcourir chaque nom de processus et vérifier s'il est actif&#13;
+for PROCESS_NAME in "${PROCESS_NAMES[@]}"; do&#13;
+    if pgrep -f "$PROCESS_NAME" &gt; /dev/null; then&#13;
+        RESULT="Yes"&#13;
+        break&#13;
+    fi&#13;
+done&#13;
+&#13;
+# Sortie pour JAMF&#13;
+echo "&lt;result&gt;$RESULT&lt;/result&gt;"</scriptContentsMac>
+</extensionAttribute>

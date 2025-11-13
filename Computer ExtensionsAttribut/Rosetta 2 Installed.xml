@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="UTF-8"?><extensionAttribute>
+<displayName>Rosetta 2 Installed</displayName>
+<description>Check if rosetta 2 is installed</description>
+<dataType>string</dataType>
+<scriptContentsMac>#!/bin/bash&#13;
+&#13;
+: &lt;&lt; DOC&#13;
+EA to determine whether Rosetta is installed. &#13;
+Possible results:&#13;
+"installed"    - arm64 Mac - Rosetta is installed&#13;
+"missing"      - arm64 Mac - Rosetta is not installed&#13;
+"ineligible" - Intel Mac - Rosetta cannot be installed&#13;
+DOC&#13;
+&#13;
+# is this an ARM Mac?&#13;
+arch=$(/usr/bin/arch)&#13;
+if [ "$arch" == "arm64" ]; then&#13;
+    # is rosetta 2 installed?&#13;
+    if [[ -f "/Library/Apple/System/Library/LaunchDaemons/com.apple.oahd.plist" ]]; then&#13;
+        result="installed"&#13;
+    else&#13;
+        result="missing"&#13;
+    fi&#13;
+else&#13;
+    result="ineligible"&#13;
+fi&#13;
+&#13;
+echo "&lt;result&gt;$result&lt;/result&gt;"</scriptContentsMac>
+</extensionAttribute>

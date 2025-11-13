@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="UTF-8"?><extensionAttribute>
+<displayName>Last Shutdown</displayName>
+<description>When is the last shutdown</description>
+<dataType>date</dataType>
+<scriptContentsMac>#!/bin/bash&#13;
+&#13;
+echo "&lt;result&gt;$(date -jf "%s" "$(sysctl kern.boottime | awk -F'[= |,]' '{print $6}')" +"%Y-%m-%d %T")&lt;/result&gt;"&#13;
+</scriptContentsMac>
+</extensionAttribute>

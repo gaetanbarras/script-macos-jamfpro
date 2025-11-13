@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="UTF-8"?><extensionAttribute>
+<displayName>Deledao Proxy Configured</displayName>
+<description>Check si la config proxy est installé sur le mac</description>
+<dataType>string</dataType>
+<scriptContentsMac>#!/bin/bash&#13;
+&#13;
+# URL attendue du fichier PAC&#13;
+EXPECTED_PAC_URL="https://cc.deledao.com/GetPacLocal?id=JzVSG9Mxka9uw87m"&#13;
+&#13;
+# Exécute scutil pour obtenir les paramètres proxy&#13;
+PROXY_SETTINGS=$(scutil --proxy)&#13;
+&#13;
+# Vérifie si ProxyAutoConfigEnable est activé et si l'URL correspond à celle attendue&#13;
+AUTO_PROXY_ENABLED=$(echo "$PROXY_SETTINGS" | grep "ProxyAutoConfigEnable : 1")&#13;
+PAC_URL=$(echo "$PROXY_SETTINGS" | grep "ProxyAutoConfigURLString : $EXPECTED_PAC_URL")&#13;
+&#13;
+if [[ -n "$AUTO_PROXY_ENABLED" &amp;&amp; -n "$PAC_URL" ]]; then&#13;
+    RESULT="Yes"  # Le proxy automatique est activé avec la bonne URL&#13;
+elif [[ -n "$AUTO_PROXY_ENABLED" &amp;&amp; -z "$PAC_URL" ]]; then&#13;
+    RESULT="Incorrect URL"  # Le proxy automatique est activé mais l'URL est incorrecte&#13;
+else&#13;
+    RESULT="No"  # Le proxy automatique n'est pas activé&#13;
+fi&#13;
+&#13;
+# Sortie pour JAMF&#13;
+echo "&lt;result&gt;$RESULT&lt;/result&gt;"</scriptContentsMac>
+</extensionAttribute>

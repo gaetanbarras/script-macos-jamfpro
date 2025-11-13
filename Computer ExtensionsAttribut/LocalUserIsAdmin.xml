@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="UTF-8"?><extensionAttribute>
+<displayName>LocalUserIsAdmin</displayName>
+<description/>
+<dataType>string</dataType>
+<scriptContentsMac>#!/bin/bash
+
+# Récupère l’utilisateur connecté
+LOCAL_USER="$(ls -l /dev/console | awk '{print $3}')"
+
+# Vérifie si le compte est admin
+if dscl . -read /Groups/admin GroupMembership | grep -q "$LOCAL_USER"; then
+    STATUS="admin"
+else
+    STATUS="standard"
+fi
+
+# Jamf Pro affiche le contenu du &lt;result&gt;
+echo "&lt;result&gt;${LOCAL_USER} (${STATUS})&lt;/result&gt;"</scriptContentsMac>
+</extensionAttribute>

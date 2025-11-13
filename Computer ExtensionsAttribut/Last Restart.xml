@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="UTF-8"?><extensionAttribute>
+<displayName>Last Restart</displayName>
+<description/>
+<dataType>date</dataType>
+<scriptContentsMac>#!/bin/bash&#13;
+&#13;
+# get last reboot date and time&#13;
+lastReboot=$( who -b )&#13;
+&#13;
+# extract month, day and time&#13;
+month=$( /usr/bin/awk '{ print $3 }' &lt;&lt;&lt; "$lastReboot" )&#13;
+day=$( /usr/bin/awk '{ print $4 }' &lt;&lt;&lt; "$lastReboot" )&#13;
+time=$( /usr/bin/awk '{ print $5 }' &lt;&lt;&lt; "$lastReboot" )&#13;
+&#13;
+# convert date and time to ISO date format&#13;
+lastRebootISO=$( /bin/date -j -f "%b %e %l:%M" "$month $day $time" '+%Y-%m-%d %I:%M:00' )&#13;
+&#13;
+echo "&lt;result&gt;$lastRebootISO&lt;/result&gt;"&#13;
+&#13;
+exit 0</scriptContentsMac>
+</extensionAttribute>

@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="UTF-8"?><extensionAttribute>
+<displayName>Rustdesk</displayName>
+<description/>
+<dataType>string</dataType>
+<scriptContentsMac>#!/bin/bash&#13;
+&#13;
+#####################################&#13;
+##&#13;
+## Pull user ID for Rust and add it to Jamf Inventory&#13;
+## App needs to have been run for that part of the plist to be populated&#13;
+##&#13;
+#####################################&#13;
+&#13;
+#Set Current User&#13;
+&#13;
+currentuser=`/bin/ls -l /dev/console | /usr/bin/awk '{ print $3 }'`&#13;
+&#13;
+#Users RustDeskID&#13;
+&#13;
+RustID=$(awk -F " |'" '($1 == "id") { print $(NF-1); exit }' /Users/$currentuser/Library/Preferences/com.carriez.RustDesk/RustDesk.toml)&#13;
+&#13;
+echo "&lt;result&gt;$RustID&lt;/result&gt;"&#13;
+</scriptContentsMac>
+</extensionAttribute>
