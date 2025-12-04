@@ -1,0 +1,80 @@
+name: Sync to Regent School Repository
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Configure Git user
+        run: |
+          git config user.name "GitHub Sync Bot"
+          git config user.email "actions@github.com"
+
+      - name: Determine repo name
+        id: determine_repo
+        run: |
+          # Extract repo name from "owner/repo"
+          repo_name="${GITHUB_REPOSITORY##*/}"
+          echo "Repo detected: $repo_name"
+          echo "repo_name=$repo_name" >> $GITHUB_OUTPUT
+
+      - name: Ensure enterprise repo exists
+        run: |
+          repo_name="${{ steps.determine_repo.outputs.repo_name }}"
+
+          echo "Checking if enterprise repo exists..."
+
+          status=$(curl -o /dev/null -s -w "%{http_code}" \
+            -H "Authorization: token $ENTERPRISE_TOKEN" \
+            https://api.github.com/repos/Regent-International-School/$repo_name)
+
+          if [ "$status" = "404" ]; then
+            echo "Enterprise repo does not exist. Creating..."
+            curl -H "Authorization: token $ENTERPRISE_TOKEN" \
+                 -H "Accept: application/vnd.github+json" \
+                 -X POST https://api.github.com/orgs/Regent-International-School/repos \
+                 -d "{\"name\":\"$repo_name\",\"private\":true}"
+          else
+            echo "Enterprise repo already exists."
+          fi
+        env:
+          ENTERPRISE_TOKEN: ${{ secrets.ENTERPRISE_TOKEN }}
+
+      - name: Create export-clean branch and remove workflows
+        run: |
+          # Ensure we are on main branch
+          git checkout main
+
+          # Delete old clean branch if it existed
+          git branch -D clean-sync-to-regent 2>/dev/null || true
+
+          # Create clean export branch
+          git checkout -b clean-sync-to-regent
+
+          # Remove GitHub Actions to avoid triggering remote workflows
+          rm -rf .github/workflows
+
+          # Commit if changes exist
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git commit -m "Remove GitHub workflows for enterprise sync"
+          fi
+
+      - name: Push to enterprise repo without workflows
+        run: |
+          repo_name="${{ steps.determine_repo.outputs.repo_name }}"
+          
+          git push --force \
+            https://${{ secrets.ENTERPRISE_TOKEN }}@github.com/Regent-International-School/$repo_name.git \
+            clean-sync-to-regent:main
