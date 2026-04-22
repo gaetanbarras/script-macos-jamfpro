@@ -1,0 +1,25 @@
+#!/bin/bash
+
+results_file="/Library/Application Support/DeledaoProxy/updateServer/selectResults.txt"
+
+if [[ ! -f "$results_file" ]]; then
+    echo "<result>Not installed or selectResults.txt missing</result>"
+    exit 0
+fi
+
+proxy_version=$(/usr/bin/awk '
+    /URI: .*\/proxy\.xml/ {found=1; next}
+    found && /Version:/ {
+        gsub(/^[ \t]+Version:[ \t]+/, "", $0)
+        print
+        exit
+    }
+' "$results_file")
+
+if [[ -n "$proxy_version" ]]; then
+    echo "<result>$proxy_version</result>"
+else
+    echo "<result>Proxy version not found</result>"
+fi
+
+exit 0
